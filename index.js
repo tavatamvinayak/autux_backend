@@ -66,7 +66,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // CREATE
-app.post('/api/items',  async (req, res) => {
+app.post('/api/items',auth,  async (req, res) => {
   try {
     const item = new Item(req.body);
     await item.save();
@@ -98,7 +98,7 @@ app.get('/api/items/:id', async (req, res) => {
 });
 
 // UPDATE
-app.put('/api/items/:id', async (req, res) => {
+app.put('/api/items/:id',auth, async (req, res) => {
   try {
     const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!item) return res.status(404).json({ error: 'Item not found' });
@@ -109,7 +109,7 @@ app.put('/api/items/:id', async (req, res) => {
 });
 
 // DELETE
-app.delete('/api/items/:id', async (req, res) => {
+app.delete('/api/items/:id',auth, async (req, res) => {
   try {
     const item = await Item.findByIdAndDelete(req.params.id);
     if (!item) return res.status(404).json({ error: 'Item not found' });
