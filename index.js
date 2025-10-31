@@ -16,13 +16,24 @@ app.use(cors({
   origin:"*"
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-function dbconnect(){
-    mongoose.connect( "mongodb+srv://vishaltavatam_db_user:vishaltavatam@cluster0.1liokc6.mongodb.net/autux?appName=Cluster0" || 'mongodb://localhost:27017/crudapi')
+
+async function dbconnect(){
+  await  mongoose.connect( "mongodb+srv://vishaltavatam_db_user:vishaltavatam@cluster0.1liokc6.mongodb.net/autux?appName=Cluster0" || process.env.MONGO_URL )
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 }
 dbconnect()
+
+
+app.get('/', (req, res) => {
+  res.send('Autux Backend Working');
+});
+
+
+
+
 
 // SIGNUP
 // app.post('/api/signup', async (req, res) => {
