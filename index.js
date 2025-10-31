@@ -50,6 +50,7 @@ app.get('/', (req, res) => {
 
 // LOGIN
 app.post('/api/login', async (req, res) => {
+  console.log("login route")
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -58,6 +59,7 @@ app.post('/api/login', async (req, res) => {
     }
     const token = jwt.sign({ userId: user._id }, 'Autux_team_VT');
     res.json({ token });
+    console.log("login success")
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
