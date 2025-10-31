@@ -5,7 +5,7 @@ const auth = (req, res, next) => {
   if (!token) return res.status(401).json({ error: 'Access denied' });
 
   try {
-    const decoded = jwt.verify(token, 'your-secret-key');
+    const decoded = jwt.verify(token, 'Autux_team_VT');
     req.user = decoded;
     next();
   } catch (error) {
