@@ -9,22 +9,22 @@ const Item = require('./models/Item');
 const User = require('./models/User');
 const auth = require('./middleware/auth');
 
-const NodeCache = require( "node-cache" );
-const myCache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
+const NodeCache = require("node-cache");
+const myCache = new NodeCache();
 
 const app = express();
 const Port = process.env.PORT || 8080;
 
 app.use(cors({
-  origin:"*"
+  origin: "*"
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
 
-async function dbconnect(){
-  await  mongoose.connect( "mongodb+srv://vishaltavatam_db_user:vishaltavatam@cluster0.1liokc6.mongodb.net/autux?appName=Cluster0" || process.env.MONGO_URL )
+async function dbconnect() {
+  await mongoose.connect("mongodb+srv://vishaltavatam_db_user:vishaltavatam@cluster0.1liokc6.mongodb.net/autux?appName=Cluster0" || process.env.MONGO_URL)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 }
@@ -32,7 +32,7 @@ dbconnect()
 
 
 app.get('/', (req, res) => {
-  res.send('Autux Backend Working');
+  res.send('Autux Backend Working').json({message:"server is running..."});
 });
 
 
@@ -137,15 +137,21 @@ app.get('/api/items', async (req, res) => {
   const cacheKey = 'items:all';
 
   // 1. Try cache first
-  const cached = myCache.get(cacheKey);
-  if (cached) {
-    return res.json(cached);
+  try {
+    const cached = myCache.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+  } catch (error) {
+    const items = await Item.find().lean();          // .lean() → plain JS objects (faster)
+    res.json(items);
+    myCache.set(cacheKey, items, 60); 
   }
 
   try {
     const items = await Item.find().lean();          // .lean() → plain JS objects (faster)
-    myCache.set(cacheKey, items, 60);                // cache for 60 seconds
     res.json(items);
+    myCache.set(cacheKey, items, 60);                // cache for 60 seconds
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -156,10 +162,18 @@ app.get('/api/items/:id', async (req, res) => {
   const cacheKey = `item:${req.params.id}`;
 
   // 1. Try cache first
-  const cached = myCache.get(cacheKey);
+  try {
+     const cached = myCache.get(cacheKey);
   if (cached) {
     return res.json(cached);
   }
+  } catch (error) {
+    const item = await Item.findById(req.params.id).lean();
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    res.json(item);
+    myCache.set(cacheKey, item, 120);                // cache for 2 minutes
+  }
+ 
 
   try {
     const item = await Item.findById(req.params.id).lean();
@@ -179,7 +193,11 @@ app.post('/api/items', auth, async (req, res) => {
     await item.save();
 
     // Invalidate list cache because a new item appeared
-    myCache.del('items:all');
+    try {
+      myCache.del('items:all');
+    } catch (error) {
+      console.log("error in items create ")
+    }
 
     res.status(201).json(item);
   } catch (error) {
